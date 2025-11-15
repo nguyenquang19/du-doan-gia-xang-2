@@ -596,3 +596,62 @@ if col2_hist.button("Xem Biến động 1 Năm", key='run_1y_hist_btn'):
     fig_1y, _ = plot_historical_trends(df_raw, days=365)
     col2_hist.subheader("Biến động 1 Năm")
     col2_hist.pyplot(fig_1y)
+
+# -----------------------------------------------------------------------------------
+# PHẦN 4: EDA - KHÁM PHÁ DỮ LIỆU
+# -----------------------------------------------------------------------------------
+st.header("4️⃣ Khám phá Dữ liệu (EDA)")
+
+eda_cols = ['Gia_Brent(USD)', 'Gia_WTI(USD)', 'USD/VND', 'RON 95-III(VND)']
+df_eda = df_raw.copy()[['date'] + [c for c in eda_cols if c in df_raw.columns]]
+df_eda['date'] = pd.to_datetime(df_eda['date'])
+
+# 4.1 Thống kê cơ bản
+st.subheader("📊 Thống kê cơ bản")
+st.dataframe(df_eda.describe().T)
+
+# 4.2 Biểu đồ phân bố giá
+st.subheader("📈 Phân bố Giá Hàng hóa & Xăng")
+fig, ax = plt.subplots(figsize=(10, 5))
+for col in eda_cols:
+    if col in df_eda.columns:
+        ax.hist(df_eda[col].dropna(), bins=30, alpha=0.5, label=col)
+ax.set_title("Phân bố giá")
+ax.set_xlabel("Giá")
+ax.set_ylabel("Tần suất")
+ax.legend()
+st.pyplot(fig)
+
+# 4.3 Biểu đồ mối quan hệ (correlation heatmap)
+st.subheader("🧩 Ma trận Tương quan")
+import seaborn as sns
+corr_df = df_eda[eda_cols].corr()
+fig, ax = plt.subplots(figsize=(8, 6))
+sns.heatmap(corr_df, annot=True, fmt=".2f", cmap="coolwarm", ax=ax)
+ax.set_title("Tương quan giữa các biến")
+st.pyplot(fig)
+
+# 4.4 Missing values
+st.subheader("⚠️ Kiểm tra Missing Values")
+missing_data = df_eda.isna().sum()
+st.dataframe(missing_data[missing_data > 0])
+
+# 4.6 🔄 Boxplot chuẩn hóa để so sánh
+st.subheader("🔄 Boxplot Chuẩn hóa (0-1) các biến giá")
+
+from sklearn.preprocessing import MinMaxScaler
+
+# Chỉ lấy các cột EDA có trong DataFrame
+eda_cols_existing = [c for c in eda_cols if c in df_eda.columns]
+
+# Chuẩn hóa Min-Max
+scaler = MinMaxScaler()
+df_scaled = df_eda[eda_cols_existing].copy()
+df_scaled[:] = scaler.fit_transform(df_scaled)
+
+# Vẽ boxplot chuẩn hóa
+fig, ax = plt.subplots(figsize=(10, 5))
+df_scaled.boxplot(ax=ax)
+ax.set_title("Boxplot chuẩn hóa (0-1) các biến giá")
+ax.set_ylabel("Giá trị chuẩn hóa")
+st.pyplot(fig)
